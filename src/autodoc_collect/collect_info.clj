@@ -26,6 +26,14 @@
 (def post-1-8? (let [{:keys [major minor]} *clojure-version*]
                  (or (>= major 2) (and (= major 1) (> minor 8)))))
 
+(defmacro if-version [condition then-part else-part]
+  (if-let [v (resolve condition)]
+    (if @v
+      `(do ~then-part)
+      `(do ~else-part))
+    (throw (IllegalArgumentException.
+            (str "Could not find version condition " condition " at compile time.")))))
+
 (defmacro defdynamic [var init]
   `(do
      (def  ~var ~init)
@@ -37,13 +45,13 @@
   (binding [*out* (or saved-out *out*)]
     (apply println args)))
 
-(if post-1-2?
+(if-version post-1-2?
   (do
     (load "reflect")
     (refer 'autodoc-collect.reflect :only '[reflect]))
   (defn reflect [obj & options]))
 
-(if post-1-8?
+(if-version post-1-8?
   (require '[clojure.spec.alpha :refer [get-spec describe registry]])
   (do
     (defn get-spec [v])
